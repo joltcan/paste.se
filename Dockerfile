@@ -2,22 +2,16 @@ FROM python:2.7-alpine
 
 RUN pip install tornado pygments
 
-ARG domain=dev.paste.se
-ARG deflang=text
-ARG configurable_index=True
-ARG altdomains=[]
-
 ADD server.py favicon.ico /paste/
 ADD templates/*.html /paste/templates/
 
-RUN \
-  echo "DB_FILE = '/data/paste.db'"                      >/paste/pasteconfig.py; \
-  echo "REDIRECT_SCHEME = 'http'"                       >>/paste/pasteconfig.py; \
-  echo "BASE_DOMAIN = '${domain}'"                      >>/paste/pasteconfig.py; \
-  echo "ALT_DOMAINS = ${altdomains}"                    >>/paste/pasteconfig.py; \
-  echo "DEFAULT_LANG = '${deflang}'"                    >>/paste/pasteconfig.py; \
-  echo "CONFIGURABLE_INDEX = ${configurable_index}"     >>/paste/pasteconfig.py; \
-  echo "TORNADOARGS=dict(debug=True)"                   >>/paste/pasteconfig.py;
+ENV DB_FILE 'paste.se'
+ENV BASE_DOMAIN 'dev.paste.se'
+ENV ALT_DOMAINS "[]"
+ENV CONFIGURABLE_INDEX True
+ENV REDIRECT_SCHEME http
+ENV DEFAULT_LANG "text"
+ENV TORNADOARGS dict(debug=True)
 
 WORKDIR /paste
 
