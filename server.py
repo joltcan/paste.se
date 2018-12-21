@@ -36,8 +36,14 @@ from pygments import highlight
 import pygments.lexers
 from pygments.formatters import HtmlFormatter, ImageFormatter, TerminalFormatter
 
-import pasteconfig
-
+import os
+DB_FILE = os.getenv('DB_FILE', 'paste.se')
+BASE_DOMAIN = os.getenv('BASE_DOMAIN', 'dev.paste.se')
+ALT_DOMAINS = os.getenv('ALT_DOMAINS', [])
+CONFIGURABLE_INDEX = os.getenv('CONFIGURABLE_INDEX', True)
+REDIRECT_SCHEME = os.getenv('REDIRECT_SCHEME', 'http')
+DEFAULT_LANG = os.getenv('DEFAULT_LANG', "text")
+TORNADOARGS = os.getenv('TORNADOARGS', dict(debug=True))
 
 OK_LANGS = [x[2][0] for x in pygments.lexers.LEXERS.values()]
 OK_LANGS.sort(key=lambda x: x.lower())
@@ -83,7 +89,7 @@ class PasteBaseHandler(tornado.web.RequestHandler):
     def _get_paste(self, fields, key=None):
         if key is None:
             key = self.request.host.split(".")[0]
-        db = sqlite3.connect(pasteconfig.DB_FILE)
+        db = sqlite3.connect(DB_FILE)
         c = db.cursor()
         try:
             c.execute("SELECT "+(",".join(fields))+" FROM paste WHERE hash=?", (str(key),))
@@ -116,8 +122,8 @@ class RobotsTxtHandler(PasteBaseHandler):
 
 class MainHandler(PasteBaseHandler):
     def get(self):
-        if (self.request.host.split(":")[0] == pasteconfig.BASE_DOMAIN or
-            self.request.host.split(":")[0] in pasteconfig.ALT_DOMAINS or
+        if (self.request.host.split(":")[0] == BASE_DOMAIN or
+            self.request.host.split(":")[0] in ALT_DOMAINS or
             self.request.host.split(".")[0] == "new"):
             try:
                 uname = tornado.escape.url_unescape(self.get_cookie("username", ""))
@@ -125,8 +131,8 @@ class MainHandler(PasteBaseHandler):
                 uname = ""
             self.render("templates/main.html",
                         username=uname,
-                        default_lang=pasteconfig.DEFAULT_LANG,
-                        configurable_index=pasteconfig.CONFIGURABLE_INDEX,
+                        default_lang=DEFAULT_LANG,
+                        configurable_index=CONFIGURABLE_INDEX,
                         langs=OK_LANGS)
             return
 
@@ -141,7 +147,7 @@ class MainHandler(PasteBaseHandler):
             self.render("templates/404.html",
                         key=self.request.host.split(".")[0],
                         host=self.request.host,
-                        base=pasteconfig.BASE_DOMAIN)
+                        base=BASE_DOMAIN)
             return
 
         lexer = pygments.lexers.get_lexer_by_name(lang)
@@ -149,7 +155,7 @@ class MainHandler(PasteBaseHandler):
         paste = stripctlchars(highlight(paste, lexer, formatter))
         css = formatter.get_style_defs(arg='')
 
-        self.render("templates/paste.html", css=css, user=user, desc=desc, paste=paste, basedomain=pasteconfig.BASE_DOMAIN)
+        self.render("templates/paste.html", css=css, user=user, desc=desc, paste=paste, basedomain=BASE_DOMAIN)
 
 
 class TermHandler(PasteBaseHandler):
@@ -219,7 +225,7 @@ class AddHandler(tornado.web.RequestHandler):
                       desc.encode("utf-8") +
                       paste.encode("utf-8")).hexdigest()[:16]
 
-        db = sqlite3.connect(pasteconfig.DB_FILE)
+        db = sqlite3.connect(DB_FILE)
         c = db.cursor()
         c.execute("REPLACE into paste (hash, user, description, lang, paste, may_index) VALUES (?, ?, ?, ?, ?, ?)",
                   (key, user, desc, lang, paste, int(index)))
@@ -227,7 +233,7 @@ class AddHandler(tornado.web.RequestHandler):
         db.close()
 
         self.set_cookie("username", tornado.escape.url_escape(user),
-                        domain=pasteconfig.BASE_DOMAIN,
+                        domain=BASE_DOMAIN,
                         path='/',
                         expires_days=30)
 
@@ -236,7 +242,7 @@ class AddHandler(tornado.web.RequestHandler):
         else:
             base_host = self.request.host
 
-        self.redirect("{}://{}.{}/".format(pasteconfig.REDIRECT_SCHEME, key, base_host))
+        self.redirect("{}://{}.{}/".format(REDIRECT_SCHEME, key, base_host))
 
 routes = [
     (r"/robots.txt", RobotsTxtHandler),
@@ -250,7 +256,7 @@ routes = [
 
 
 def create_db_if_not_exists():
-    db = sqlite3.connect(pasteconfig.DB_FILE)
+    db = sqlite3.connect(DB_FILE)
     c = db.cursor()
     c.execute("""CREATE TABLE IF NOT EXISTS paste (
     hash PRIMARY KEY,
@@ -264,7 +270,7 @@ def create_db_if_not_exists():
 
 
 application = tornado.web.Application(routes,
-                                      **pasteconfig.TORNADOARGS)
+                                      TORNADOARGS)
 
 if __name__ == "__main__":
     create_db_if_not_exists()
