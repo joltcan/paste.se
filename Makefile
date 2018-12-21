@@ -16,8 +16,6 @@ run:
 	docker \
 		run \
 		--detach \
-		--interactive \
-		--tty \
 		--hostname=${CONTAINER} \
 		--name=${CONTAINER} \
 		-e BASE_DOMAIN=${BASE_DOMAIN} \
