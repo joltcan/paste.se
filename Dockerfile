@@ -1,4 +1,4 @@
-FROM python:2.7-alpine
+FROM jfloff/alpine-python:2.7-slim
 
 RUN pip install tornado pygments
 
