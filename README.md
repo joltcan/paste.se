@@ -41,10 +41,6 @@ server {
     listen 80;
     server_name .<BASE_DOMAIN>
 
-    if ($scheme = http) {
-        return 301 https://$server_name$request_uri;
-    }
-
     location / {
         proxy_pass http://localhost:8800;
         proxy_set_header Host $host;
