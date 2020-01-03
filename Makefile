@@ -1,6 +1,6 @@
 CONTAINER	:= paste.se
 HUB_USER	:= ${USER}
-TAG			:= v0.1
+TAG			:= v0.2
 IMAGE_NAME	:= ${CONTAINER}:${TAG}
 PORT		:= 8800
 VOLUME		:= data
